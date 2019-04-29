@@ -66,9 +66,10 @@ app.intent('getting_info', (conv, {protocols}) => {
 
 		return termRef.get()
 		.then((snapshot) => {
-			const {concepts, prof} = snapshot.data();//Te asigna a cada variable cada uno de los fields del documento
+			const {concepts, professors} = snapshot.data();//Te asigna a cada variable cada uno de los fields del documento
 			console.log('FUNCIONA:', snapshot.data());
-			conv.ask(`The main concepts of ${subjects} are ${concepts} and the professors are ${prof}. Do you want to know something more?`);
+			console.log(`PROFESORES:${professors}`);
+			conv.ask(`The main concepts of ${subjects} are ${concepts} and the professors are ${professors}. Do you want to know something more?`);
 				}).catch((e) => {
 					console.log('error:', e);
 					conv.ask('Sorry, no such subject');
