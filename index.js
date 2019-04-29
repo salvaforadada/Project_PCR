@@ -8,26 +8,13 @@ const admin = require('firebase-admin');
 const app = dialogflow({debug: true});
 
 var config = {
-********************
+*******************************
 };
 
 admin.initializeApp(config);
 
 const db = admin.firestore();
 
-
-/*var getDoc = collectionRef.get()
-.then(doc => {
-if (!doc.exists) {
-console.log('No such document!');
-} else {
-console.log('Document data:', doc.data());
-}
-})
-.catch(err => {
-console.log('Error getting document', err);
-});
-*/
 
 app.intent('getting_info', (conv, {protocols}) => {
 	const collectionRef = db.collection('charly1');
@@ -48,14 +35,6 @@ app.intent('getting_info', (conv, {protocols}) => {
 		});
 	});
 
-	/*la idea es que pueda decir:
-	1- ayúdame con pcr --> los main concepts son ... y los profesores...
-	2-dime los profesores de pcr
-
-	Entonces la idea es poner tanto subjects como professors como parametros y
-	dependiendo de si el usuario dice solo el nombre de la asig o tb la palabra "profesores"
-	pues hacer una cosa u otra
-	*/
 	app.intent('subjects', (conv, {subjects}) => {
 		const collectionRef = db.collection('subjects');
 		const term = subjects.toLowerCase();
@@ -66,7 +45,7 @@ app.intent('getting_info', (conv, {protocols}) => {
 
 		return termRef.get()
 		.then((snapshot) => {
-			const {concepts, professors} = snapshot.data();//Te asigna a cada variable cada uno de los fields del documento
+			const {concepts, professors} = snapshot.data();//Think the name of these variables has to be the same than in firebase
 			console.log('FUNCIONA:', snapshot.data());
 			console.log(`PROFESORES:${professors}`);
 			conv.ask(`The main concepts of ${subjects} are ${concepts} and the professors are ${professors}. Do you want to know something more?`);
