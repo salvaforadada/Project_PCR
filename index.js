@@ -8,7 +8,7 @@ const admin = require('firebase-admin');
 const app = dialogflow({debug: true});
 
 var config = {
-*******************************
+	*******************************
 };
 
 admin.initializeApp(config);
@@ -35,48 +35,73 @@ app.intent('getting_info', (conv, {protocols}) => {
 		});
 	});
 
-	app.intent('subjects', (conv, {subjects}) => {
-		const collectionRef = db.collection('subjects');
-		const term = subjects.toLowerCase();
-		const termRef = collectionRef.doc(`${term}`);
-		console.log(`DOCUMENT: ${term}`);
-		//const documents = [];
-		//const subject = subjects;
+	/*app.intent('subjects', (conv, {subjects}) => {
+	const collectionRef = db.collection('subjects');
+	const term = subjects.toLowerCase();
+	const termRef = collectionRef.doc(`${term}`);
+	console.log(`DOCUMENT: ${term}`);
+	//const documents = [];
+	//const subject = subjects;
+
+	return termRef.get()
+	.then((snapshot) => {
+	const {concepts, professors} = snapshot.data();//Think the name of these variables has to be the same than in firebase
+	console.log('FUNCIONA:', snapshot.data());
+	console.log(`PROFESORES:${professors}`);
+	conv.ask(`The main concepts of ${subjects} are ${concepts} and the professors are ${professors}. Do you want to know something more?`);
+}).catch((e) => {
+console.log('error:', e);
+conv.ask('Sorry, no such subject');
+});
+});
+*/
+app.intent('subjects', (conv, {subjects, temp_professors, temp_concepts}) => {
+	const collectionRef = db.collection('subjects');
+	const term = subjects.toLowerCase();
+	const termRef = collectionRef.doc(`${term}`);
+
+	if ((temp_professors == undefined) && (temp_concepts == undefined) ) { //Solo ha dado el nombre de la asig --> devolvemos conceptos y profesores
+		console.log(`PROFESSORS AND CONCEPTS UNDEFINED`);
 
 		return termRef.get()
 		.then((snapshot) => {
-			const {concepts, professors} = snapshot.data();//Think the name of these variables has to be the same than in firebase
-			console.log('FUNCIONA:', snapshot.data());
-			console.log(`PROFESORES:${professors}`);
+			const {concepts, professors} = snapshot.data();//Think the name of these variables has to be the same as in firebase
+			//console.log('FUNCIONA:', snapshot.data());
+			console.log(`DENTRO --> PROFESSORS AND CONCEPTS UNDEFINED`);
 			conv.ask(`The main concepts of ${subjects} are ${concepts} and the professors are ${professors}. Do you want to know something more?`);
-				}).catch((e) => {
-					console.log('error:', e);
-					conv.ask('Sorry, no such subject');
-				});
-			});
+		}).catch((e) => {
+			console.log('error:', e);
+			conv.ask('Sorry, no such subject');
+		});
 
-	/*
-	app.intent('subjects', (conv, {subjects}) => {
-		const term = subjects.toLowerCase();
-		const collectionRef = db.collection(`${term}`);
-		//const termRef = collectionRef.doc(`${term}`);
-		//const documents = [];
-		//const subject = subjects;
+	} else if (temp_professors == undefined) { //En este caso, lo que pide el usuario sera los conceptos de una asignatura
+		console.log(`PROFESSORS UNDEFINED AND CONCEPTS DEFINED`);
 
-		return collectionRef.get()
+		return termRef.get()
 		.then((snapshot) => {
-			conv.ask(`The main concepts of ${subjects} are:`);
-			snapshot.forEach(doc => {
-				console.log('FUNCIONA');
-				console.log(doc.id, '=>', doc.data());
-				documents.push(doc.id);
-				//conv.ask(doc.id);
-			});
-				conv.ask(`${documents}. Do you want to know something more?`);
-				}).catch((e) => {
-					console.log('error:', e);
-					conv.close('Sorry, no such subject');
-				});
-			});
-*/
-			exports.dialogflowFirebaseFulfillment = functions.https.onRequest(app);
+			const {concepts} = snapshot.data();//Think the name of these variables has to be the same than in firebase
+			//console.log('FUNCIONA:', snapshot.data());
+			console.log(`DENTRO: PROFESSORS UNDEFINED AND CONCEPTS DEFINED`);
+			conv.ask(`The main concepts of ${subjects} are ${concepts}. Do you want to know something more?`);
+		}).catch((e) => {
+			console.log('error:', e);
+			conv.ask('Sorry, no such subject');
+		});
+
+	} else { //si ha llegado hasta aqui es que el que no esta definido es el temp_concepts, o sea que el usuario pide los profesores de una asignatura
+		console.log(`PROFESSORS DEFINED AND CONCEPTS UNDEFINED`);
+
+		return termRef.get()
+		.then((snapshot) => {
+			const {professors} = snapshot.data();//Think the name of these variables has to be the same than in firebase
+			//console.log('FUNCIONA:', snapshot.data());
+			console.log(`DENTRO: PROFESSORS DEFINED AND CONCEPTS UNDEFINED`);
+			conv.ask(`The professors of ${subjects} are ${professors}. Do you want to know something more?`);
+		}).catch((e) => {
+			console.log('error:', e);
+			conv.ask('Sorry, no such subject');
+		});
+	}
+});
+
+exports.dialogflowFirebaseFulfillment = functions.https.onRequest(app);
