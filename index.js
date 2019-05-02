@@ -35,73 +35,59 @@ app.intent('getting_info', (conv, {protocols}) => {
 		});
 	});
 
-	/*app.intent('subjects', (conv, {subjects}) => {
-	const collectionRef = db.collection('subjects');
-	const term = subjects.toLowerCase();
-	const termRef = collectionRef.doc(`${term}`);
-	console.log(`DOCUMENT: ${term}`);
-	//const documents = [];
-	//const subject = subjects;
-
-	return termRef.get()
-	.then((snapshot) => {
-	const {concepts, professors} = snapshot.data();//Think the name of these variables has to be the same than in firebase
-	console.log('FUNCIONA:', snapshot.data());
-	console.log(`PROFESORES:${professors}`);
-	conv.ask(`The main concepts of ${subjects} are ${concepts} and the professors are ${professors}. Do you want to know something more?`);
-}).catch((e) => {
-console.log('error:', e);
-conv.ask('Sorry, no such subject');
-});
-});
-*/
-app.intent('subjects', (conv, {subjects, temp_professors, temp_concepts}) => {
-	const collectionRef = db.collection('subjects');
-	const term = subjects.toLowerCase();
-	const termRef = collectionRef.doc(`${term}`);
-
-	if ((temp_professors == undefined) && (temp_concepts == undefined) ) { //Solo ha dado el nombre de la asig --> devolvemos conceptos y profesores
-		console.log(`PROFESSORS AND CONCEPTS UNDEFINED`);
+	app.intent('subjects', (conv, {subjects}) => {
+		const collectionRef = db.collection('subjects');
+		const term = subjects.toLowerCase();
+		const termRef = collectionRef.doc(`${term}`);
+		console.log(`DOCUMENT: ${term}`);
 
 		return termRef.get()
 		.then((snapshot) => {
-			const {concepts, professors} = snapshot.data();//Think the name of these variables has to be the same as in firebase
+			const {concepts, professors} = snapshot.data();//Think the name of these variables has to be the same than in firebase
+			console.log('PROFESORES Y CONCEPTOS:');
 			//console.log('FUNCIONA:', snapshot.data());
-			console.log(`DENTRO --> PROFESSORS AND CONCEPTS UNDEFINED`);
+			//console.log(`PROFESORES:${professors}`);
 			conv.ask(`The main concepts of ${subjects} are ${concepts} and the professors are ${professors}. Do you want to know something more?`);
 		}).catch((e) => {
 			console.log('error:', e);
 			conv.ask('Sorry, no such subject');
 		});
+	});
 
-	} else if (temp_professors == undefined) { //En este caso, lo que pide el usuario sera los conceptos de una asignatura
-		console.log(`PROFESSORS UNDEFINED AND CONCEPTS DEFINED`);
+	app.intent('concepts of subjects', (conv, {subjects, temp_concepts}) => {
+		const collectionRef = db.collection('subjects');
+		const term = subjects.toLowerCase();
+		const termRef = collectionRef.doc(`${term}`);
 
 		return termRef.get()
 		.then((snapshot) => {
 			const {concepts} = snapshot.data();//Think the name of these variables has to be the same than in firebase
+			console.log('CONCEPTOS:');
 			//console.log('FUNCIONA:', snapshot.data());
-			console.log(`DENTRO: PROFESSORS UNDEFINED AND CONCEPTS DEFINED`);
+			//console.log(`PROFESORES:${professors}`);
 			conv.ask(`The main concepts of ${subjects} are ${concepts}. Do you want to know something more?`);
 		}).catch((e) => {
 			console.log('error:', e);
 			conv.ask('Sorry, no such subject');
 		});
+	});
 
-	} else { //si ha llegado hasta aqui es que el que no esta definido es el temp_concepts, o sea que el usuario pide los profesores de una asignatura
-		console.log(`PROFESSORS DEFINED AND CONCEPTS UNDEFINED`);
+	app.intent('professors of subjects', (conv, {subjects, temp_professors}) => {
+		const collectionRef = db.collection('subjects');
+		const term = subjects.toLowerCase();
+		const termRef = collectionRef.doc(`${term}`);
 
 		return termRef.get()
 		.then((snapshot) => {
 			const {professors} = snapshot.data();//Think the name of these variables has to be the same than in firebase
+			console.log('PROFESSORS:');
 			//console.log('FUNCIONA:', snapshot.data());
-			console.log(`DENTRO: PROFESSORS DEFINED AND CONCEPTS UNDEFINED`);
+			//console.log(`PROFESORES:${professors}`);
 			conv.ask(`The professors of ${subjects} are ${professors}. Do you want to know something more?`);
 		}).catch((e) => {
 			console.log('error:', e);
 			conv.ask('Sorry, no such subject');
 		});
-	}
-});
+	});
 
-exports.dialogflowFirebaseFulfillment = functions.https.onRequest(app);
+	exports.dialogflowFirebaseFulfillment = functions.https.onRequest(app);
