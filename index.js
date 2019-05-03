@@ -90,4 +90,36 @@ app.intent('getting_info', (conv, {protocols}) => {
 		});
 	});
 
+	app.intent('concepts', (conv, {concepts}) => {
+		const collectionRef = db.collection('concepts');
+		const term = concepts.toLowerCase();
+		const termRef = collectionRef.doc(`${term}`);
+
+		//Aquí hay que hacer algo para guardar el contexto, para que cuando nos pregunten por un concepto devolverle la descripcion y preguntarle "Quieres saber algo más?"
+		//y si nos dice que si, tendremos que tener guardado el nombre del concepto para ya devolverle los elementos del array que sean
+		return termRef.get()
+		.then((snapshot) => {
+			const {description, info} = snapshot.data();//Think the name of these variables has to be the same than in firebase
+			console.log('CONCEPTS:', snapshot.data());
+			//console.log(`PROFESORES:${professors}`);
+			//conv.ask(`${description}. Do you want some additional information like a paper or a book about ${concepts}?`);
+
+			const array_length = info.length;//Si tiene 4 elementos, es 4
+			var rand = Math.floor(Math.random() * (array_length));//La declaro var porque no se si va a cambiar cuando hagamos lo de guardar el nº para no devolver el mismo
+
+			if (rand%2 == 1) {
+				const title = info[rand - 1];
+				const link = info[rand];
+			} else {
+				const title = info[rand];
+				const link = info[rand + 1];
+			}
+
+			conv.ask(`${description}. Here you have a source of information about ${concepts}: ${title} --> ${link}`);
+		}).catch((e) => {
+			console.log('error:', e);
+			conv.ask('Sorry, no such concept');
+		});
+	});
+
 	exports.dialogflowFirebaseFulfillment = functions.https.onRequest(app);
