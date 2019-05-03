@@ -1,11 +1,10 @@
 'use strict';
 
-
-
 const {dialogflow} = require('actions-on-google');
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const app = dialogflow({debug: true});
+const {BasicCard, Button, Image} = require('actions-on-google');
 
 var config = {
 	*******************************
@@ -116,30 +115,51 @@ app.intent('getting_info', (conv, {protocols}) => {
 				var rand = Math.floor(Math.random() * (array_length));//La declaro var porque no se si va a cambiar cuando hagamos lo de guardar el nº para no devolver el mismo
 				console.log(`RANDOM IS ${rand}`);
 				var title;
+				var cite;
 				var link;
-				if (rand%2 == 1) {
-					title = info[rand - 1];
-					link = info[rand];
-				} else {
-					title = info[rand];
-					link = info[rand + 1];
-				}
+				var img;
 
+				switch(rand%4) {
+					case 0:
+					title = info[rand];
+					cite = info[rand + 1];
+					link = info[rand + 2];
+					img	= info[rand + 3];
+					break;
+					case 1:
+					title = info[rand - 1];
+					cite = info[rand];
+					link = info[rand + 1];
+					img	= info[rand + 2];
+					break;
+					case 2:
+					title = info[rand - 2];
+					cite = info[rand - 1];
+					link = info[rand];
+					img	= info[rand + 1];
+					break;
+					case 3:
+					title = info[rand - 3];
+					cite = info[rand - 2];
+					link = info[rand - 1];
+					img	= info[rand];
+					break;
+				}
 				conv.ask(`${description}. Here you have a source of information about ${concepts}:`);
 
 				// Create a basic card
 				conv.ask(new BasicCard({
-					text: `Para ver si esto es lo que hace que no funcione`, //Si no pones una imagen, tienes que poner texto si o si
 					title: `${title}`,
+					text: `${cite}`, //Si no pones una imagen, tienes que poner texto si o si
 					buttons: new Button({
 						title: 'Go to research paper',
 						url: `${link}`,
 					}),
-					/*image: new Image({
-						url: 'https://example.com/image.png',
-						alt: 'Image alternate text',
-					}),*/
-					//display: 'CROPPED',
+					image: new Image({
+						url: `${img}`,
+						//alt: 'Image alternate text',
+					}),
+					display: 'CROPPED',
 				}));
 			}).catch((e) => {
 				console.log('error:', e);
