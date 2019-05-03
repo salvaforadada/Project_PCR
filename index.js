@@ -91,35 +91,61 @@ app.intent('getting_info', (conv, {protocols}) => {
 	});
 
 	app.intent('concepts', (conv, {concepts}) => {
-		const collectionRef = db.collection('concepts');
-		const term = concepts.toLowerCase();
-		const termRef = collectionRef.doc(`${term}`);
 
-		//Aquí hay que hacer algo para guardar el contexto, para que cuando nos pregunten por un concepto devolverle la descripcion y preguntarle "Quieres saber algo más?"
-		//y si nos dice que si, tendremos que tener guardado el nombre del concepto para ya devolverle los elementos del array que sean
-		return termRef.get()
-		.then((snapshot) => {
-			const {description, info} = snapshot.data();//Think the name of these variables has to be the same than in firebase
-			console.log('CONCEPTS:', snapshot.data());
-			//console.log(`PROFESORES:${professors}`);
-			//conv.ask(`${description}. Do you want some additional information like a paper or a book about ${concepts}?`);
+		if (!conv.surface.capabilities.has('actions.capability.SCREEN_OUTPUT')) { //If there is no screen
+			conv.ask('Sorry, try this on a screen device or select the ' +
+			'phone surface in the simulator.');
+			return;
+		}
+		else { //If there is screen
+			const collectionRef = db.collection('concepts');
+			const term = concepts.toLowerCase();
+			console.log(`DOCUMENT IS ${term}`);
+			const termRef = collectionRef.doc(`${term}`);
 
-			const array_length = info.length;//Si tiene 4 elementos, es 4
-			var rand = Math.floor(Math.random() * (array_length));//La declaro var porque no se si va a cambiar cuando hagamos lo de guardar el nº para no devolver el mismo
+			//Aquí hay que hacer algo para guardar el contexto, para que cuando nos pregunten por un concepto devolverle la descripcion y preguntarle "Quieres saber algo más?"
+			//y si nos dice que si, tendremos que tener guardado el nombre del concepto para ya devolverle los elementos del array que sean
+			return termRef.get()
+			.then((snapshot) => {
+				const {description, info} = snapshot.data();//Think the name of these variables has to be the same than in firebase
+				console.log('CONCEPTS:', snapshot.data());
+				//console.log(`PROFESORES:${professors}`);
+				//conv.ask(`${description}. Do you want some additional information like a paper or a book about ${concepts}?`);
 
-			if (rand%2 == 1) {
-				const title = info[rand - 1];
-				const link = info[rand];
-			} else {
-				const title = info[rand];
-				const link = info[rand + 1];
-			}
+				const array_length = info.length;//Si tiene 4 elementos, es 4
+				var rand = Math.floor(Math.random() * (array_length));//La declaro var porque no se si va a cambiar cuando hagamos lo de guardar el nº para no devolver el mismo
+				console.log(`RANDOM IS ${rand}`);
+				var title;
+				var link;
+				if (rand%2 == 1) {
+					title = info[rand - 1];
+					link = info[rand];
+				} else {
+					title = info[rand];
+					link = info[rand + 1];
+				}
 
-			conv.ask(`${description}. Here you have a source of information about ${concepts}: ${title} --> ${link}`);
-		}).catch((e) => {
-			console.log('error:', e);
-			conv.ask('Sorry, no such concept');
-		});
+				conv.ask(`${description}. Here you have a source of information about ${concepts}:`);
+
+				// Create a basic card
+				conv.ask(new BasicCard({
+					text: `Para ver si esto es lo que hace que no funcione`, //Si no pones una imagen, tienes que poner texto si o si
+					title: `${title}`,
+					buttons: new Button({
+						title: 'Go to research paper',
+						url: `${link}`,
+					}),
+					/*image: new Image({
+						url: 'https://example.com/image.png',
+						alt: 'Image alternate text',
+					}),*/
+					//display: 'CROPPED',
+				}));
+			}).catch((e) => {
+				console.log('error:', e);
+				conv.ask('Sorry, no such concept');
+			});
+		}
 	});
 
 	exports.dialogflowFirebaseFulfillment = functions.https.onRequest(app);
