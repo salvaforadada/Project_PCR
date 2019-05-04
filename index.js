@@ -1,9 +1,23 @@
 'use strict';
 
-const {dialogflow} = require('actions-on-google');
+// Import the Dialogflow module and response creation dependencies from the
+// Actions on Google client library.
+const {
+	dialogflow,
+	SignIn,
+	Permission,
+	Suggestions,
+} = require('actions-on-google'); //Suggestion chips: A visual component that provides recommended text options that the user can tap on screened devices.
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
-const app = dialogflow({debug: true});
+const app = dialogflow({
+	debug: true,
+	clientId: "*****",
+});
+
+//Para el manejo de "app" (que influye en como identificar los intents) estamos usando la nomenclatura de Dialogflow. Para todo lo demás, como vemos, estamos usando la libreria de "actions-on-google"
+//Dialogflow --> app.intent('Default Welcome Intent', conv => {...
+//Actions SDK --> app.intent('actions.intent.MAIN', conv => {
 const {BasicCard, Button, Image} = require('actions-on-google');
 
 var config = {
@@ -73,7 +87,6 @@ app.intent('getting_info', (conv, {protocols}) => {
 
 	app.intent('professors of subjects', (conv, {subjects, temp_professors}) => {
 
-
 		const collectionRef = db.collection('subjects');
 		const term = subjects.toLowerCase();
 		const termRef = collectionRef.doc(`${term}`);
@@ -92,60 +105,89 @@ app.intent('getting_info', (conv, {protocols}) => {
 	});
 
 	app.intent('Want more information - yes', (conv, {concepts}) => {
-		if (!conv.surface.capabilities.has('actions.capability.SCREEN_OUTPUT')) { //If there is no screen
-			conv.ask('Sorry, try this on a screen device or select the ' +
-			'phone surface in the simulator.');
-			return;
-		}
-		else { //If there is screen
-			const collectionRef = db.collection('concepts');
-			const term = concepts.toLowerCase();
-			console.log(`DOCUMENT IS ${term}`);
-			const termRef = collectionRef.doc(`${term}`);
+		const collectionRef = db.collection('concepts');
+		const term = concepts.toLowerCase();
+		console.log(`DOCUMENT IS ${term}`);
+		const termRef = collectionRef.doc(`${term}`);
 
-			//Aquí hay que hacer algo para guardar el contexto, para que cuando nos pregunten por un concepto devolverle la descripcion y preguntarle "Quieres saber algo más?"
-			//y si nos dice que si, tendremos que tener guardado el nombre del concepto para ya devolverle los elementos del array que sean
-			return termRef.get()
-			.then((snapshot) => {
-				const {info} = snapshot.data();//Think the name of these variables has to be the same than in firebase
-				console.log(`INFO: ${info}`);
-				//console.log(`PROFESORES:${professors}`);
-				//conv.ask(`${description}. Do you want some additional information like a paper or a book about ${concepts}?`);
+		//Aquí hay que hacer algo para guardar el contexto, para que cuando nos pregunten por un concepto devolverle la descripcion y preguntarle "Quieres saber algo más?"
+		//y si nos dice que si, tendremos que tener guardado el nombre del concepto para ya devolverle los elementos del array que sean
+		return termRef.get()
+		.then((snapshot) => {
+			const {info} = snapshot.data();//Think the name of these variables has to be the same than in firebase
+			console.log(`INFO: ${info}`);
+			//console.log(`PROFESORES:${professors}`);
+			//conv.ask(`${description}. Do you want some additional information like a paper or a book about ${concepts}?`);
 
-				const array_length = info.length;//Si tiene 4 elementos, es 4
-				var rand = Math.floor(Math.random() * (array_length));//La declaro var porque no se si va a cambiar cuando hagamos lo de guardar el nº para no devolver el mismo
-				console.log(`RANDOM IS ${rand}`);
-				var title;
-				var cite;
-				var link;
-				var img;
+			const array_length = info.length;//Si tiene 4 elementos, es 4
+			var rand = Math.floor(Math.random() * (array_length));//La declaro var porque no se si va a cambiar cuando hagamos lo de guardar el nº para no devolver el mismo
+			console.log(`RANDOM IS ${rand}`);
+			var title;
+			var cite;
+			var link;
+			var img;
 
-				switch(rand%4) {
-					case 0:
-					title = info[rand];
-					cite = info[rand + 1];
-					link = info[rand + 2];
-					img	= info[rand + 3];
-					break;
-					case 1:
-					title = info[rand - 1];
-					cite = info[rand];
-					link = info[rand + 1];
-					img	= info[rand + 2];
-					break;
-					case 2:
-					title = info[rand - 2];
-					cite = info[rand - 1];
-					link = info[rand];
-					img	= info[rand + 1];
-					break;
-					case 3:
-					title = info[rand - 3];
-					cite = info[rand - 2];
-					link = info[rand - 1];
-					img	= info[rand];
-					break;
+			switch(rand%4) {
+				case 0:
+				title = info[rand];
+				cite = info[rand + 1];
+				link = info[rand + 2];
+				img	= info[rand + 3];
+				break;
+				case 1:
+				title = info[rand - 1];
+				cite = info[rand];
+				link = info[rand + 1];
+				img	= info[rand + 2];
+				break;
+				case 2:
+				title = info[rand - 2];
+				cite = info[rand - 1];
+				link = info[rand];
+				img	= info[rand + 1];
+				break;
+				case 3:
+				title = info[rand - 3];
+				cite = info[rand - 2];
+				link = info[rand - 1];
+				img	= info[rand];
+				break;
+			}
+			if (!conv.surface.capabilities.has('actions.capability.SCREEN_OUTPUT')) { //If there is no screen, we sent an email
+				/*conv.ask('Sorry, try this on a screen device or select the ' +
+				'phone surface in the simulator.');
+				return;*/
+				if (conv.user.storage.email) {//Si nos ha dado permiso para guardar su email y lo tenemos
+					const nodemailer = require('nodemailer');
+					const transporter = nodemailer.createTransport({
+						service: 'gmail',
+						auth: {
+							user: '100402322@alumnos.uc3m.es',
+							pass: '***********'
+						}
+					});
+					var mailOptions = {
+						from: '100402322@alumnos.uc3m.es',
+						to: conv.user.storage.email, //receiver email
+						subject: `Information about ${concepts}`,
+						text: `Here you have a source of information about ${concepts}: \n ${link}`
+					};
+
+					transporter.sendMail(mailOptions, function (error, info) {
+						if (error) {
+							console.log(error);
+						} else {
+							console.log('Email sent: ' + info.response);
+						}
+					});
+					conv.ask(`Information about ${concepts} has been sent to your email account.`);
+				} else {
+					conv.ask('Sorry, try this on a screen device.');
+					return;
 				}
+			}
+			else { //If there is screen
+
 				conv.ask(`Here you have a source of information about ${concepts}:`, new Suggestions('Thank you, bye'));
 
 				// Create a basic card
@@ -162,11 +204,11 @@ app.intent('getting_info', (conv, {protocols}) => {
 					}),
 					display: 'CROPPED',
 				}));
-			}).catch((e) => {
-				console.log('error:', e);
-				conv.ask('Sorry, no such concept');
-			});
-		}
+			}
+		}).catch((e) => {
+			console.log('error:', e);
+			conv.ask('Sorry, no such concept');
+		});
 	});
 
 
@@ -188,12 +230,10 @@ app.intent('getting_info', (conv, {protocols}) => {
 			if (conv.surface.capabilities.has('actions.capability.SCREEN_OUTPUT')) { //If there is no screen
 				conv.ask(new Suggestions('Yes', 'No'));
 			}
-
 		}).catch((e) => {
 			console.log('error:', e);
 			conv.ask('Sorry, no such concept');
 		});
-
 	});
 
 	/*
@@ -246,6 +286,7 @@ app.intent("Get signin", (conv, params, signin) => {
 		}
 	}
 });
+
 /*
 // Handle the Dialogflow intent named 'actions_intent_PERMISSION'. If user
 // agreed to PERMISSION prompt, then boolean value 'permissionGranted' is true.
