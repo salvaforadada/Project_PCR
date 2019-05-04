@@ -146,7 +146,7 @@ app.intent('getting_info', (conv, {protocols}) => {
 					img	= info[rand];
 					break;
 				}
-				conv.ask(`Here you have a source of information about ${concepts}:`);
+				conv.ask(`Here you have a source of information about ${concepts}:`, new Suggestions('Thank you, bye'));
 
 				// Create a basic card
 				conv.ask(new BasicCard({
@@ -177,8 +177,6 @@ app.intent('getting_info', (conv, {protocols}) => {
 		console.log(`DOCUMENT IS ${term}`);
 		const termRef = collectionRef.doc(`${term}`);
 
-		//Aquí hay que hacer algo para guardar el contexto, para que cuando nos pregunten por un concepto devolverle la descripcion y preguntarle "Quieres saber algo más?"
-		//y si nos dice que si, tendremos que tener guardado el nombre del concepto para ya devolverle los elementos del array que sean
 		return termRef.get()
 		.then((snapshot) => {
 			const {description} = snapshot.data();//Think the name of these variables has to be the same than in firebase
@@ -187,6 +185,9 @@ app.intent('getting_info', (conv, {protocols}) => {
 			//conv.ask(`${description}. Do you want some additional information like a paper or a book about ${concepts}?`);
 
 			conv.ask(`${description}. Do you want more information about ${concepts}?`);
+			if (conv.surface.capabilities.has('actions.capability.SCREEN_OUTPUT')) { //If there is no screen
+				conv.ask(new Suggestions('Yes', 'No'));
+			}
 
 		}).catch((e) => {
 			console.log('error:', e);
@@ -195,4 +196,76 @@ app.intent('getting_info', (conv, {protocols}) => {
 
 	});
 
-	exports.dialogflowFirebaseFulfillment = functions.https.onRequest(app);
+	/*
+	// Handle the Dialogflow intent named 'Default Welcome Intent'.
+	app.intent('Default Welcome Intent', (conv) => {
+	const name = conv.user.storage.userName;
+	if (!name) {
+	// Asks the user's permission to know their name, for personalization.
+	conv.ask(new Permission({
+	context: 'Hi there, to get to know you better',
+	permissions: 'NAME',
+}));
+} else {
+conv.ask(`Hi again, ${name}. What do you want to know?`);
+}
+});
+*/
+
+app.intent('Default Welcome Intent', (conv) => {
+	//console.log(`ESTOY EN DEFAULT WELCOME INTENT`);
+	//conv.user.storage = {};
+	const name = conv.user.storage.userName;
+	if (!name) {
+		// Asks the user's permission to know their name, for personalization.
+		conv.ask(new SignIn("For a better and personalized experience,"));
+	}
+	else {
+		conv.ask(`Hi again, ${name}. What do you want to know?`);
+		if (conv.surface.capabilities.has('actions.capability.SCREEN_OUTPUT')) { //If there is no screen
+			conv.ask(new Suggestions('Tell me about PCR', 'What is Dialogflow', 'Office hours Mario Munoz'));
+		}
+	}
+});
+
+app.intent("Get signin", (conv, params, signin) => {
+	if (signin.status === "OK") {
+		const payload = conv.user.profile.payload;
+		conv.user.storage.userName = payload.name;
+		conv.user.storage.email = payload.email;
+		console.log(`conv.user.storage.userName: ${conv.user.storage.userName}`);
+		console.log(`conv.user.storage.email: ${conv.user.storage.email}`);
+		conv.ask(`I got your account details, ${payload.name}. What do you want to do next?`);
+		if (conv.surface.capabilities.has('actions.capability.SCREEN_OUTPUT')) { //If there is no screen
+			conv.ask(new Suggestions('Tell me something about PCR', 'What is Dialogflow?', 'Which are the office hours of Carlos Delgado?'));
+		}
+	} else {
+		conv.ask("Ok, no worries, but I will not be able to send you some useful information to your email. What do you want to know?");
+		if (conv.surface.capabilities.has('actions.capability.SCREEN_OUTPUT')) { //If there is no screen
+			conv.ask(new Suggestions('Tell me something about PCR', 'What is Dialogflow?', 'Which are the office hours of Carlos Delgado?'));
+		}
+	}
+});
+/*
+// Handle the Dialogflow intent named 'actions_intent_PERMISSION'. If user
+// agreed to PERMISSION prompt, then boolean value 'permissionGranted' is true.
+//Como le hemos puesto el evento "actions_intent_PERMISSION" creo que se lanza cuando pides permiso en cualquier otro intent para algo con new Permission
+app.intent('Get permission', (conv, params, permissionGranted) => {
+if (!permissionGranted) {
+conv.ask(`Ok, no worries. What do you want to know?`);
+if (conv.surface.capabilities.has('actions.capability.SCREEN_OUTPUT')) { //If there is no screen
+conv.ask(new Suggestions('Tell me something about PCR', 'What is Dialogflow?', 'Which are the office hours of Carlos Delgado?'));
+}
+} else {
+conv.user.storage = conv.user.name.display;
+conv.ask(`Thanks, ${conv.data.userName}. What's your favorite color?`);
+if (conv.surface.capabilities.has('actions.capability.SCREEN_OUTPUT')) { //If there is no screen
+conv.ask(new Suggestions('Tell me something about PCR', 'What is Dialogflow?', 'Which are the office hours of Carlos Delgado?'));
+}
+}
+});
+*/
+//To access just the email in the payload, you can also use {@link User#email|conv.user.email}.
+
+
+exports.dialogflowFirebaseFulfillment = functions.https.onRequest(app);
